@@ -7,13 +7,13 @@ async function saveToLibrary() {
       let observer = new MutationObserver((mutations, obs) => {
         let element = document.getElementById('gs_md_albl-d');
         if (element) {
-          let labels = element.querySelectorAll('gs_lbl');
+          let labels = element.querySelectorAll('gs_ldb_lbc');
           let doneButton = element.querySelector('#gs_lbd_apl');
+          const LABEL = 'Affective LitReview';
 
-          const targetContent = 'Affective LitReview';
-          
+          console.log(labels);
           labels.forEach((element) => {
-            if (element.textContent.trim() === targetContent) {
+            if (element.textContent.trim() === LABEL) {
               element.click();
             }
           });
