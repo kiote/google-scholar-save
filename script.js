@@ -27,6 +27,7 @@ async function saveToLibrary() {
       // Start observing the document with the configured parameters
       observer.observe(document, { childList: true, subtree: true });
     });
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Add a 1-second delay between button clicks
   }
 }
 
