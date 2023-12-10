@@ -1,19 +1,23 @@
 function saveToLibrary() {
   // Create a new observer instance
   let observer = new MutationObserver((mutations, obs) => {
-    let element = document.getElementById('gs_md_albl-d-bdy');
+    let element = document.getElementById('gs_md_d');
     if (element) {
-      console.log("Element exists!");
       obs.disconnect(); // Stop observing changes
 
-      let elements = element.querySelectorAll('*');
+      let labels = element.querySelectorAll('gs_lbl');
       const targetContent = 'Affective LitReview';
       
-      elements.forEach((element) => {
+      labels.forEach((element) => {
         if (element.textContent.trim() === targetContent) {
           element.click();
         }
       });
+
+      let doneButton = element.querySelector('gs_btn_act');
+      console.log("DONE BUTTON");
+      console.log(doneButton);
+      doneButton.click();
     }
   });
   
