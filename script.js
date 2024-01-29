@@ -18,7 +18,6 @@ async function saveToLibrary() {
 
       doneButton.click();
       console.log("SAVED");
-      obs.disconnect(); // Stop observing changes
     }
   });
 
