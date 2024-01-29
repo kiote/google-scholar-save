@@ -33,7 +33,7 @@ async function saveToLibrary(label) {
       setTimeout(() => {
         observer.disconnect(); // Stop observing changes
         resolve(); // Resolve the promise
-      }, 1000);
+      }, 500);
     });
   }
 }
