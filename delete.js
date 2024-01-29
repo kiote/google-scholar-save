@@ -1,12 +1,13 @@
-fuction clickDeleteButton() {
-  const deleteButton = document.querySelector('.gs_or_del.gs_or_btn'); // Select the delete button
+async function clickDeleteButton() {
+  const deleteButtons = document.querySelectorAll('a.gs_or_del.gs_or_btn');
 
-  if (deleteButton) {
-    deleteButton.click(); // Click the delete button if it exists
+  for (let button of deleteButtons) {
+    button.click();
     console.log("DELETED");
-  } else {
-    console.log("DELETE button not found");
+    
+    // Wait for 500ms before continuing to the next iteration
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
 
-clickDeleteButton(); // Call the function to perform the action
+clickDeleteButton(); // Call the function
