@@ -1,7 +1,7 @@
 // Copy-paste this to browser console
 // it's recommended that you make sure what this code does before running it
 // for example, that it doesn't steal your bank account details
-async function saveToLibrary() {
+async function saveToLibrary(label) {
   const saveButtons = document.querySelectorAll('[role="button"].gs_or_sav');
 
   // Create a new observer instance
@@ -10,10 +10,9 @@ async function saveToLibrary() {
     if (element) {
       const links = document.querySelectorAll('a.gs_cb_gen.gs_in_cb.gs_in_cbb');
       let doneButton = element.querySelector('#gs_lbd_apl');
-      const LABEL = 'affective lit review';
 
       for (let link of links) {
-        if (link.textContent.trim() === "affective lit review") {
+        if (link.textContent.trim() === label) {
             link.click();
             break;
         }
@@ -39,4 +38,4 @@ async function saveToLibrary() {
   }
 }
 
-saveToLibrary();
+saveToLibrary('affective lit review');
