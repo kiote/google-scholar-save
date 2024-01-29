@@ -7,7 +7,7 @@ async function saveToLibrary() {
     if (element) {
       let labels = element.querySelectorAll('gs_ldb_lbc');
       let doneButton = element.querySelector('#gs_lbd_apl');
-      const LABEL = 'Affective LitReview';
+      const LABEL = 'affective lit review';
 
       console.log(labels);
       labels.forEach((element) => {
