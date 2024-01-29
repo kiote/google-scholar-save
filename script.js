@@ -5,16 +5,16 @@ async function saveToLibrary() {
   let observer = new MutationObserver((mutations, obs) => {
     let element = document.getElementById('gs_md_albl-d');
     if (element) {
-      let labels = element.querySelectorAll('gs_ldb_lbc');
+      const links = document.querySelectorAll('a.gs_cb_gen.gs_in_cb.gs_in_cbb');
       let doneButton = element.querySelector('#gs_lbd_apl');
       const LABEL = 'affective lit review';
 
-      console.log(labels);
-      labels.forEach((element) => {
-        if (element.textContent.trim() === LABEL) {
-          element.click();
+      for (let link of links) {
+        if (link.textContent.trim() === "affective lit review") {
+            link.click();
+            break;
         }
-      });
+      }
 
       doneButton.click();
       console.log("SAVED");
