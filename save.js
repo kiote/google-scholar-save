@@ -1,3 +1,6 @@
+// Copy-paste this to browser console
+// it's recommended that you make sure what this code does before running it
+// for example, that it doesn't steal your bank account details
 async function saveToLibrary() {
   const saveButtons = document.querySelectorAll('[role="button"].gs_or_sav');
 
