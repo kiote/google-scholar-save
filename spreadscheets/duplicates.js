@@ -11,7 +11,7 @@ function colorDuplicateRows() {
 
   // Iterate through all rows to identify duplicates in column "C" (index 2)
   values.forEach((row, index) => {
-    const cellValue = row[2].toLowerCase(); // Column "C" value
+    const cellValue = row[2].toLowerCase().trim(); // Column "C" value
     if (seenValues.has(cellValue)) {
       // If value is already seen, mark row index as duplicate
       duplicateRows.push(index);
