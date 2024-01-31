@@ -1,8 +1,4 @@
-/**
- * Sets the background color of rows with duplicate values in column "C" to yellow.
- * Assumes the active sheet is the target and column "C" is the column to check for duplicates.
- */
-function colorDuplicateRows() {
+function colorAndDeleteDuplicateRows() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const dataRange = sheet.getDataRange();
   const values = dataRange.getValues();
@@ -20,8 +16,11 @@ function colorDuplicateRows() {
     }
   });
 
-  // Color the identified duplicate rows in yellow
-  duplicateRows.forEach(rowIndex => {
+  // Reverse iterate through the duplicate rows to delete them without affecting indices
+  for (let i = duplicateRows.length - 1; i >= 0; i--) {
+    let rowIndex = duplicateRows[i];
     sheet.getRange(rowIndex + 1, 1, 1, sheet.getLastColumn()).setBackground("yellow");
-  });
+    // Delete row
+    sheet.deleteRow(rowIndex + 1);
+  }
 }
