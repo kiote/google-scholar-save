@@ -13,3 +13,7 @@ It might be fine for a couple of articles, but if you have 900 articles, it give
 ## Solution
 
 This repo offers you a JS script to copy-paste to the [browser console](https://balsamiq.com/support/faqs/browserconsole/) and wait until it does all the clicks. After that, you must do only one click - "Export all".
+
+## Warning
+
+Most of this code Chat-GPT generated, so don't expect much from it's quality. Last time I checked it worked :)
