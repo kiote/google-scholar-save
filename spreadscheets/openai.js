@@ -8,7 +8,8 @@ function AI_ANALYZE(title, abstract) {
     "messages": [
       {
         "role": "system",
-        "content": `I'll give you a scientific article, apply to it inclusion and exclusion criteria:
+        "content": `I'll give you a scientific article, apply to it inclusion and exclusion criteria, and answer if I should include it to my review.
+        Consider each criteria, think step by step.
 
 Specific Exclusion Criteria:
 
@@ -33,6 +34,8 @@ Specific Inclusion Criteria
 3. Empirical Evaluation of Measurement: Include studies with clear methodology for measuring emotion-related cues. Ideally, look for those comparing multiple measurement approaches.
 
 4. Quantitative Measures: Favor research quantifying emotion-related cues, providing insights suitable for ranking and categorization.
+
+Try to formulate your conclusion at the end, do not complain that you have not enough data.
 `
       },
       {
