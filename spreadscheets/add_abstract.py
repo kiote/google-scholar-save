@@ -5,22 +5,20 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 
 def extract_abstract_text(html_content):
-    print(f"Extracting abstract from HTML content...")
-    print(html_content[:100])
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Look for the div with id="abstract"
-    abstract_div = soup.find('div', id='abstracts')
+    extraction_methods = [
+        lambda s: s.find('div', id='abstract'),
+        lambda s: s.find('section', id='abstract'),
+        lambda s: s.find('p', class_='mb15'),
+        lambda s: s.find('div', id='Abs1-section')
+    ]
 
-    if abstract_div:
-        # Extract text from the abstract div
-        abstract_text = abstract_div.get_text(separator=' ', strip=True)
-        print(f"Abstract extracted: {abstract_text}")
-        return abstract_text
-    else:
-        print("No abstract div found in the HTML content")
+    for method in extraction_methods:
+        abstract_element = method(soup)
+        if abstract_element:
+            return abstract_element.get_text(separator=' ', strip=True)
 
-    # If no abstract div is found, return an empty string
     return ""
 
 async def get_abstract_from_html(session, doi):
