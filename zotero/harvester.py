@@ -31,18 +31,27 @@ async def get_abstract(session, doi, client):
             return await extract_abstract_with_anthropic(html_content, client)
     return None
 
-async def process_entries(entries, client):
+async def process_entries(entries, client, pbar):
     async with aiohttp.ClientSession() as session:
-        tasks = [get_abstract(session, entry[0], client) for entry in entries if len(entry) >= 2]
-        abstracts = await asyncio.gather(*tasks)
-        return [(entry[0], entry[1], abstract) for entry, abstract in zip(entries, abstracts) if abstract]
+        results = []
+        for entry in entries:
+            if len(entry) >= 2:
+                doi, title = entry[0], entry[1]
+                abstract = await get_abstract(session, doi, client)
+                if abstract:
+                    results.append((doi, title, abstract))
+                pbar.update(1)
+                pbar.set_postfix({"Last DOI": doi})
+        return results
 
 async def harvest_abstracts(input_file, output_file, anthropic_api_key):
     with open(input_file, 'r', encoding='utf-8') as f:
         entries = list(csv.reader(f, delimiter='\t'))
 
     client = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
-    results = await process_entries(entries[1:], client)  # Skip header row
+    
+    with tqdm(total=len(entries) - 1, desc="Processing entries") as pbar:  # -1 for header
+        results = await process_entries(entries[1:], client, pbar)  # Skip header row
 
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f, delimiter='\t')
