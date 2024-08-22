@@ -1,80 +1,78 @@
 # adds abstracts to DOI>Title TSV file
 import csv
-import requests
-import time
+import asyncio
+import aiohttp
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+import time
+import os
 
-def get_abstract_crossref(doi):
+async def get_abstract_crossref(session, doi, semaphore):
     url = f"https://api.crossref.org/works/{doi}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        return data['message'].get('abstract')
+    async with semaphore:
+        await asyncio.sleep(0.5)  # Wait for 0.5 seconds before making the request
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data['message'].get('abstract')
     return None
 
-def get_abstract_unpaywall(doi):
-    email = "your_email@example.com"  # Replace with your email
-    url = f"https://api.unpaywall.org/v2/{doi}?email={email}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        return data.get('abstract')
-    return None
+async def process_entry(session, entry, semaphore):
+    if not entry or len(entry) < 2:
+        print(f"Skipping invalid entry: {entry}")
+        return None, None, None
 
-def get_abstract_sciencedirect(doi):
-    url = f"https://www.sciencedirect.com/science/article/pii/{doi}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
-        abstract = soup.find('div', class_='abstract')
-        if abstract:
-            return abstract.text.strip()
-    return None
-
-def get_abstract(doi):
-    abstract = get_abstract_crossref(doi) or get_abstract_unpaywall(doi) or get_abstract_sciencedirect(doi)
-    return abstract
-
-def process_entry(entry):
-    doi, title = entry
+    doi, title = entry[0], entry[1]
     try:
-        abstract = get_abstract(doi)
+        abstract = await get_abstract_crossref(session, doi, semaphore)
         return doi, title, abstract
     except Exception as e:
         print(f"Error processing DOI {doi}: {str(e)}")
         return doi, title, None
 
-def harvest_abstracts(input_file, output_file):
+def write_results(results, output_file, mode='a'):
+    with open(output_file, mode, newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter='\t')
+        if mode == 'w':
+            writer.writerow(['DOI', 'Title', 'Abstract'])
+        writer.writerows(results)
+
+async def harvest_abstracts(input_file, output_file, batch_size=100):
+    # Initialize output file
+    write_results([], output_file, mode='w')
+
     with open(input_file, 'r', encoding='utf-8') as f:
         reader = csv.reader(f, delimiter='\t')
-        entries = list(reader)  # Read all entries into memory
+        entries = list(reader)
 
     total_entries = len(entries)
-    results = []
+    results_buffer = []
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(process_entry, entry): entry for entry in entries}
+    semaphore = asyncio.Semaphore(10)  # Limit concurrent requests to 10
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [process_entry(session, entry, semaphore) for entry in entries]
 
         with tqdm(total=total_entries, desc="Processing entries") as pbar:
-            for future in as_completed(futures):
-                entry = futures[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    print(f"Error processing entry {entry}: {str(e)}")
-                finally:
-                    pbar.update(1)
-                    pbar.set_postfix({"Completed": f"{pbar.n}/{total_entries}"})
+            for task in asyncio.as_completed(tasks):
+                result = await task
+                if result[0] is not None:  # Only add valid results to the buffer
+                    results_buffer.append(result)
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f, delimiter='\t')
-        writer.writerow(['DOI', 'Title', 'Abstract'])
-        writer.writerows(results)
+                # Write results to file when buffer reaches batch_size
+                if len(results_buffer) >= batch_size:
+                    write_results(results_buffer, output_file)
+                    results_buffer = []
+
+                pbar.update(1)
+                pbar.set_postfix({"Completed": f"{pbar.n}/{total_entries}"})
+
+    # Write any remaining results
+    if results_buffer:
+        write_results(results_buffer, output_file)
 
 if __name__ == "__main__":
     input_file = "/home/kiote/collection.csv"
     output_file = "/home/kiote/collection_abstract.csv"
-    harvest_abstracts(input_file, output_file)
+    asyncio.run(harvest_abstracts(input_file, output_file))
+
