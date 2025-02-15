@@ -4,6 +4,7 @@ import sqlite3
 import csv
 import sys
 import os
+import re
 
 def get_item_id_by_title(conn, title):
     """
@@ -55,7 +56,6 @@ def get_authors(conn, item_id):
     cur.execute(query, (item_id,))
     authors = []
     for last_name, first_name in cur.fetchall():
-        # Adjust how you want to display the name:
         if first_name:
             authors.append(f"{first_name} {last_name}")
         else:
@@ -86,7 +86,6 @@ def parse_year(zotero_date):
     """
     if not zotero_date:
         return None
-    import re
     match = re.search(r"\b(\d{4})\b", zotero_date)
     if match:
         return match.group(1)
@@ -98,62 +97,78 @@ def determine_type_and_venue(item_type_name, conn, item_id):
     and extract a relevant 'venue' from the appropriate Zotero field.
     """
     if item_type_name == 'journalArticle':
+        # Journal
         return 'journal', get_field_value(conn, item_id, 'publicationTitle')
     elif item_type_name == 'conferencePaper':
-        # Some references might store 'conferenceName' instead of 'proceedingsTitle'—adjust as needed.
+        # Conference
         venue = get_field_value(conn, item_id, 'proceedingsTitle')
         if not venue:
             venue = get_field_value(conn, item_id, 'conferenceName')
         return 'conference', venue
     else:
-        # If you want to handle other types, add them here.
-        # For simplicity, mark everything else as 'other'
+        # For everything else, label as 'other'
         return 'other', None
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python get_paper_info.py 'Title of the Paper' [/path/to/output.csv]")
-        sys.exit(1)
+    # Optional: read output.csv path from command line, otherwise default
+    if len(sys.argv) > 1:
+        output_csv = sys.argv[1]
+    else:
+        output_csv = 'output.csv'
 
+    # Adjust to your actual Zotero database path
     db_path = os.path.expanduser("~/Zotero/zotero.sqlite")
-    title = sys.argv[1]
-    # Optional output CSV path, default to 'output.csv'
-    output_csv = sys.argv[3] if len(sys.argv) > 3 else 'output.csv'
 
+    # Connect to the Zotero database
     conn = sqlite3.connect(db_path)
 
-    # 1. Lookup the item(s) by title
-    item_ids = get_item_id_by_title(conn, title)
-    if not item_ids:
-        print(f"No item found matching title: {title}")
-        sys.exit(0)
-
-    # 2. For each matched item, collect metadata
+    # Prepare to store results
     results = []
-    for item_id in item_ids:
-        # Get authors
-        authors_list = get_authors(conn, item_id)
-        authors_str = "; ".join(authors_list)
 
-        # Get year (parsed from Zotero date)
-        zotero_date = get_field_value(conn, item_id, 'date')
-        year_str = parse_year(zotero_date)
+    # Read titles from 'input.txt'
+    input_file = 'input.txt'
+    with open(input_file, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
 
-        # Get item type (journalArticle, conferencePaper, etc.)
-        item_type_name = get_item_type(conn, item_id)
+    for line in lines:
+        title = line.strip()
+        if not title:
+            # Skip any empty lines
+            continue
 
-        # Convert to simpler "journal"/"conference" plus a venue
-        type_str, venue_str = determine_type_and_venue(item_type_name, conn, item_id)
+        # Find item(s) in Zotero
+        item_ids = get_item_id_by_title(conn, title)
 
-        results.append({
-            'title': title,
-            'authors': authors_str,
-            'year': year_str,
-            'type': type_str,
-            'venue': venue_str if venue_str else ''
-        })
+        if not item_ids:
+            # If no match is found, write a row with minimal info or placeholders
+            results.append({
+                'title': title,
+                'authors': 'not found',
+                'year': '',
+                'type': '',
+                'venue': ''
+            })
+        else:
+            # If we have matches, gather info for each matched item
+            for item_id in item_ids:
+                authors_list = get_authors(conn, item_id)
+                authors_str = "; ".join(authors_list)
 
-    # 3. Write out CSV
+                zotero_date = get_field_value(conn, item_id, 'date')
+                year_str = parse_year(zotero_date)
+
+                item_type_name = get_item_type(conn, item_id)
+                type_str, venue_str = determine_type_and_venue(item_type_name, conn, item_id)
+
+                results.append({
+                    'title': title,
+                    'authors': authors_str,
+                    'year': year_str if year_str else '',
+                    'type': type_str,
+                    'venue': venue_str if venue_str else ''
+                })
+
+    # Write out to CSV
     fieldnames = ['title', 'authors', 'year', 'type', 'venue']
     with open(output_csv, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -161,7 +176,7 @@ def main():
         for row in results:
             writer.writerow(row)
 
-    print(f"Found {len(results)} item(s) matching '{title}' and wrote data to {output_csv}.")
+    print(f"Wrote {len(results)} rows to '{output_csv}' from '{input_file}'.")
 
 if __name__ == "__main__":
     main()
