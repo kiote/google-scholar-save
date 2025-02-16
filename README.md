@@ -17,3 +17,9 @@ This repo offers you a JS script to copy-paste to the [browser console](https://
 ## Warning
 
 Most of this code Chat-GPT generated, so don't expect much from it's quality. Last time I checked it worked :)
+
+## Tools
+
+Get PDF from zotero and convert it to text: `python3 pdf/mass_reader.py`
+
+Expects file `docs/in.txt` to have paper's DOI on each line.
