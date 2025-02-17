@@ -20,6 +20,8 @@ Most of this code Chat-GPT generated, so don't expect much from it's quality. La
 
 ## Tools
 
-Get PDF from zotero and convert it to text: `python3 pdf/mass_reader.py`
+Get PDFs from zotero and convert it to text: `python3 pdf/mass_reader.py`. This is needed for the workflow: Get PDF -> convert to text -> feed to openAI model -> ask questions -> write answers.
 
 Expects file `docs/in.txt` to have paper's DOI on each line.
+
+`mass_reader` script covers `Get PDF -> convert to text` part of the workflow.

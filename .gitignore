@@ -1,2 +1,4 @@
 pymupdf-venv
 docs
+.env
+__pycache__
