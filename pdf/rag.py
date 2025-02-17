@@ -70,7 +70,24 @@ QUESTIONS = [
     },
     {
         "id": 12,
-        "question": "How does paper addresses and evaluate interpretability? does paper discuss interpretability in this meaning: Interpretability and Explainability Interpretability in machine learning involves elucidating model decisions in a manner comprehensible to humans, revealing the underlying reasoning process. We use the terms interpretable and explainable interchangeably, collectively referred to as interpretability. Key difference in interpretability Probabilities of skill mastery: These are often treated as an output-level interpretability metric, summarizing the learner’s overall skill state. Focus is on the end result (skill level) rather than the journey (how the level was reached). Process-level interpretability: This method delves into process-level interpretability, emphasizing the journey by uncovering how individual or grouped interactions shape the model's predictions. It provides insights into the reasoning process of the DKT model, making the predictionsmore transparent Important: provide direct quotations from the paper's text, like what exact sentences did you use to make this conclusion. Provide sections titles, where you got this info from"
+        "question": (
+            "How does paper addresses and evaluate interpretability? does paper discuss "
+            "interpretability in this meaning: Interpretability and Explainability "
+            "Interpretability in machine learning involves elucidating model decisions "
+            "in a manner comprehensible to humans, revealing the underlying reasoning "
+            "process. We use the terms interpretable and explainable interchangeably, "
+            "collectively referred to as interpretability. Key difference in interpretability "
+            "Probabilities of skill mastery: These are often treated as an output-level "
+            "interpretability metric, summarizing the learner’s overall skill state. Focus "
+            "is on the end result (skill level) rather than the journey (how the level was "
+            "reached). Process-level interpretability: This method delves into process-level "
+            "interpretability, emphasizing the journey by uncovering how individual or "
+            "grouped interactions shape the model's predictions. It provides insights into "
+            "the reasoning process of the DKT model, making the predictionsmore transparent "
+            "Important: provide direct quotations from the paper's text, like what exact "
+            "sentences did you use to make this conclusion. Provide sections titles, where "
+            "you got this info from"
+        )
     },
     {
         "id": 13,
@@ -101,13 +118,15 @@ prompt = PromptTemplate(
 # Helper Function
 # --------------------------------------------------
 
-def build_vectorstore_from_text(text: str) -> FAISS:
+def build_vectorstore_from_text(text: str, source_filename: str) -> FAISS:
     """
     Given a file's text, split it into smaller chunks,
     embed them, and store them in a local FAISS vector store.
     Returns the vectorstore object.
     """
-    raw_doc = LC_Document(page_content=text)
+    # Attach the filename as metadata so we can reference it in citations
+    raw_doc = LC_Document(page_content=text, metadata={"source": source_filename})
+    
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs = splitter.split_documents([raw_doc])
 
@@ -119,21 +138,42 @@ def build_vectorstore_from_text(text: str) -> FAISS:
 def answer_question(vectorstore: FAISS, question: str) -> str:
     """
     Given a vector store and a question, retrieve relevant chunks
-    and run the LLM chain to get an answer. 
+    and run the LLM chain to get an answer + citations.
     """
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
-    llm = ChatOpenAI(model_name="o1-preview", temperature=1.0)
+    llm = ChatOpenAI(
+        model_name="o1-preview",  # update as needed
+        temperature=1.0
+    )
+    
+    # IMPORTANT: we set return_source_documents=True
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",  # simplest approach
         retriever=retriever,
         chain_type_kwargs={"prompt": prompt},
-        return_source_documents=False,
+        return_source_documents=True,
     )
 
-    response = qa_chain.run(question)
-    return response.strip()
+    # Instead of .run(...), we call the chain as a dict to get the docs
+    chain_result = qa_chain({"query": question})
+    answer = chain_result["result"]
+    source_docs = chain_result["source_documents"]
+
+    # Build a simple list of citations. 
+    # You might want to shorten doc.page_content or highlight relevant sentences only.
+    citations = []
+    for i, doc in enumerate(source_docs, start=1):
+        # We'll take the first ~200 characters as a snippet, for example
+        snippet = doc.page_content[:200].replace("\n", " ")
+        source_name = doc.metadata.get("source", "unknown_file")
+        citations.append(f"{i}. [Source: {source_name}] \"{snippet}...\"")
+
+    # Create a final string that includes the answer plus a small list of citations
+    citations_str = "\n".join(citations)
+    final_text = f"{answer}\n\nCitations:\n{citations_str}"
+    return final_text.strip()
 
 # --------------------------------------------------
 # Main Script
@@ -150,18 +190,20 @@ def main():
             with open(txt_path, "r", encoding="utf-8") as f:
                 file_content = f.read()
 
-            vectorstore = build_vectorstore_from_text(file_content)
+            # Build the vectorstore, passing the filename into metadata
+            vectorstore = build_vectorstore_from_text(file_content, filename)
 
             base_name = os.path.splitext(filename)[0]
             md_filename = base_name + ".md"
             md_path = os.path.join(FOLDER_PATH, md_filename)
 
             for q in QUESTIONS:
-                answer = answer_question(vectorstore, q["question"])
+                answer_with_citations = answer_question(vectorstore, q["question"])
+                
                 md_content = (
                     f"## Question {q['id']}\n"
                     f"**{q['question']}**\n"
-                    f"{answer}\n\n"
+                    f"{answer_with_citations}\n\n"
                 )
                 with open(md_path, "a", encoding="utf-8") as md_file:
                     md_file.write(md_content)
