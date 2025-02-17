@@ -20,8 +20,23 @@ Most of this code Chat-GPT generated, so don't expect much from it's quality. La
 
 ## Tools
 
+### LitReview Workflow
+
+#### MassReader
+
 Get PDFs from zotero and convert it to text: `python3 pdf/mass_reader.py`. This is needed for the workflow: Get PDF -> convert to text -> feed to openAI model -> ask questions -> write answers.
 
 Expects file `docs/in.txt` to have paper's DOI on each line.
 
 `mass_reader` script covers `Get PDF -> convert to text` part of the workflow.
+
+#### RAG
+
+One by one takes text from `docs/papers` (only .txt files) and runs series of questions. Saves answers to the `docs/papers` .md files
+
+```
+export LANGSMITH_TRACING="true"
+export OPEN_AI_KEY="YOUR_OPEN_AI_KEY"
+export LANGSMITH_API_KEY="YOUR_KEY_FROM_LANGSMITH"
+python3 pdf/rag.py
+```

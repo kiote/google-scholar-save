@@ -15,18 +15,18 @@ questions = [
     #     "id": 2,
     #     "question": "what are the objectives of the paper in one sentence?"
     # },
-    {
-        "id": 3,
-        "question": "what are Ethical concerns (anything in the paper discussing the use of ethic frameworks to prepare their data and model)"
-    },
-    {
-        "id": 4,
-        "question": "what educational or behavioural theories used in this paper?"
-    },
-    {
-        "id": 5,
-        "question": "in one sentence list what are methods (algorithms) used in paper. Make sure they used in \"Methods\" or \"Methodology\" section, not just discussed in general."
-    },
+    # {
+    #     "id": 3,
+    #     "question": "what are Ethical concerns (anything in the paper discussing the use of ethic frameworks to prepare their data and model)"
+    # },
+    # {
+    #     "id": 4,
+    #     "question": "what educational or behavioural theories used in this paper?"
+    # },
+    # {
+    #     "id": 5,
+    #     "question": "in one sentence list what are methods (algorithms) used in paper. Make sure they used in \"Methods\" or \"Methodology\" section, not just discussed in general."
+    # },
     {
         "id": 6,
         "question": "How many participants (sample)? and what datasets were used in the paper."
@@ -105,17 +105,17 @@ def main():
             md_filename = base_name + ".md"
             md_path = os.path.join(FOLDER_PATH, md_filename)
 
-            md_output_lines = []
             for q in questions:
                 answer = ask_question_about_text(file_content, q["question"])
                 
-                # Markdown formatting
-                md_output_lines.append(f"## Question {q['id']}\n")
-                md_output_lines.append(f"**{q['question']}**\n")
-                md_output_lines.append(f"{answer}\n\n")
-
-            with open(md_path, "w", encoding="utf-8") as md_file:
-                md_file.write("\n".join(md_output_lines))
+                md_content = (
+                    f"## Question {q['id']}\n"
+                    f"**{q['question']}**\n"
+                    f"{answer}\n\n"
+                )
+                
+                with open(md_path, "a", encoding="utf-8") as md_file:
+                    md_file.write(md_content)
             
             print(f"Processed '{filename}' -> '{md_filename}'")
 
