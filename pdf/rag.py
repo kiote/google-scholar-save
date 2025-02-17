@@ -123,7 +123,7 @@ def answer_question(vectorstore: FAISS, question: str) -> str:
     """
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
-    llm = ChatOpenAI(temperature=0)  # or whichever model you prefer
+    llm = ChatOpenAI(model_name="o1-preview", temperature=1.0)
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",  # simplest approach
