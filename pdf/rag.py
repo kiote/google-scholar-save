@@ -6,13 +6,15 @@ from langchain.schema import Document
 from langchain.docstore.document import Document as LC_Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS  # or InMemory, Chroma, etc.
+from langchain.vectorstores import FAISS
 
-# 2) LangChain modules for the LLM
+# 2) LangChain modules for the LLM and QA
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
 from langchain.chains import RetrievalQA
+
+# 3) For optional named tracing sessions (see below)
+from langchain.callbacks import tracing_enabled
 
 # --------------------------------------------------
 # Configuration
@@ -22,26 +24,26 @@ FOLDER_PATH = "./docs/papers"
 
 # The same questions you used before
 QUESTIONS = [
-    # {
-    #     "id": 1,
-    #     "question": "Extract no more than 5 ideas from this paper to be used as descriptive keywords. List them just comma-separated regular text"
-    # },
-    # {
-    #     "id": 2,
-    #     "question": "what are the objectives of the paper in one sentence?"
-    # },
-    # {
-    #     "id": 3,
-    #     "question": "what are Ethical concerns (anything in the paper discussing the use of ethic frameworks to prepare their data and model)"
-    # },
-    # {
-    #     "id": 4,
-    #     "question": "what educational or behavioural theories used in this paper?"
-    # },
-    # {
-    #     "id": 5,
-    #     "question": "in one sentence list what are methods (algorithms) used in paper. Make sure they used in \"Methods\" or \"Methodology\" section, not just discussed in general."
-    # },
+    {
+        "id": 1,
+        "question": "Extract no more than 5 ideas from this paper to be used as descriptive keywords. List them just comma-separated regular text"
+    },
+    {
+        "id": 2,
+        "question": "what are the objectives of the paper in one sentence?"
+    },
+    {
+        "id": 3,
+        "question": "what are Ethical concerns (anything in the paper discussing the use of ethic frameworks to prepare their data and model)"
+    },
+    {
+        "id": 4,
+        "question": "what educational or behavioural theories used in this paper?"
+    },
+    {
+        "id": 5,
+        "question": "in one sentence list what are methods (algorithms) used in paper. Make sure they used in \"Methods\" or \"Methodology\" section, not just discussed in general."
+    },
     {
         "id": 6,
         "question": "How many participants (sample)? and what datasets were used in the paper."
@@ -77,12 +79,11 @@ QUESTIONS = [
 ]
 
 # A generic prompt template; you can customize as needed.
-# We'll keep it simple here so the chain does the heavy lifting:
 PROMPT_TEMPLATE = """You are a helpful assistant strictly limited to the context provided. 
 Use only the text below to answer the question. 
 If the text does not provide enough information, say you don't know.
 Important: provide direct quotations from the paper's text, like what exact sentences did you use to make this conclusion.
-Provide sections titles, where you got this info from. Privide answer as a plain text, no markdown
+Provide sections titles, where you got this info from. Provide answer as plain text, no markdown
 
 Context:
 {context}
@@ -106,40 +107,31 @@ def build_vectorstore_from_text(text: str) -> FAISS:
     embed them, and store them in a local FAISS vector store.
     Returns the vectorstore object.
     """
-    # 1) Create "documents"
-    #    (In many examples we wrap in LC_Document, but langchain.schema.Document also works.)
     raw_doc = LC_Document(page_content=text)
-
-    # 2) Split into chunks
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs = splitter.split_documents([raw_doc])  # list of LC_Document
+    docs = splitter.split_documents([raw_doc])
 
-    # 3) Create embeddings
-    embeddings = OpenAIEmbeddings()  # uses the OPENAI_API_KEY from environment
-
-    # 4) Load the docs into a FAISS vector store
+    embeddings = OpenAIEmbeddings()  # uses OPENAI_API_KEY from environment
     vectorstore = FAISS.from_documents(docs, embedding=embeddings)
     return vectorstore
+
 
 def answer_question(vectorstore: FAISS, question: str) -> str:
     """
     Given a vector store and a question, retrieve relevant chunks
     and run the LLM chain to get an answer. 
     """
-    # 1) Create a retriever
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})  # get top 4 chunks
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
-    # 2) Build an LLM chain that uses the retrieved docs as context
     llm = ChatOpenAI(temperature=0)  # or whichever model you prefer
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff",     # simplest approach: stuff retrieved docs into {context}
+        chain_type="stuff",  # simplest approach
         retriever=retriever,
         chain_type_kwargs={"prompt": prompt},
-        return_source_documents=False,  # set True if you want the exact sources
+        return_source_documents=False,
     )
 
-    # 3) Ask the question
     response = qa_chain.run(question)
     return response.strip()
 
@@ -148,23 +140,22 @@ def answer_question(vectorstore: FAISS, question: str) -> str:
 # --------------------------------------------------
 
 def main():
+    # Optionally, name your session with a context manager:
+    # with tracing_enabled("my_rag_session"):
+
     for filename in os.listdir(FOLDER_PATH):
         if filename.endswith(".txt"):
             txt_path = os.path.join(FOLDER_PATH, filename)
-
-            # 1) Read file content
+            
             with open(txt_path, "r", encoding="utf-8") as f:
                 file_content = f.read()
 
-            # 2) Create a vector store for this file
             vectorstore = build_vectorstore_from_text(file_content)
 
-            # 3) Prepare the output .md file
             base_name = os.path.splitext(filename)[0]
             md_filename = base_name + ".md"
             md_path = os.path.join(FOLDER_PATH, md_filename)
 
-            # 4) Loop over questions, get answers
             for q in QUESTIONS:
                 answer = answer_question(vectorstore, q["question"])
                 md_content = (
@@ -172,13 +163,16 @@ def main():
                     f"**{q['question']}**\n"
                     f"{answer}\n\n"
                 )
-                # 5) Append the answer to the .md file
                 with open(md_path, "a", encoding="utf-8") as md_file:
                     md_file.write(md_content)
 
             print(f"Processed '{filename}' -> '{md_filename}'")
 
+
 if __name__ == "__main__":
+    # Make sure OPENAI_API_KEY is set
     if not os.environ.get("OPENAI_API_KEY"):
         raise ValueError("Please set the OPENAI_API_KEY environment variable.")
+
+    # Run
     main()
