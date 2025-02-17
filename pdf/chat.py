@@ -11,11 +11,54 @@ questions = [
     #     "id": 1,
     #     "question": "Extract no more than 5 ideas from this paper to be used as descriptive keywords. List them just comma-separated regular text"
     # },
+    # {
+    #     "id": 2,
+    #     "question": "what are the objectives of the paper in one sentence?"
+    # },
     {
-        "id": 2,
-        "question": "what are the objectives of the paper in one sentence? important: provide direct quotations from the paper's text. Provide sections titles, where you got this info from. Privide answer as a plain text, no markdown"
+        "id": 3,
+        "question": "what are Ethical concerns (anything in the paper discussing the use of ethic frameworks to prepare their data and model)"
     },
-    
+    {
+        "id": 4,
+        "question": "what educational or behavioural theories used in this paper?"
+    },
+    {
+        "id": 5,
+        "question": "in one sentence list what are methods (algorithms) used in paper. Make sure they used in \"Methods\" or \"Methodology\" section, not just discussed in general."
+    },
+    {
+        "id": 6,
+        "question": "How many participants (sample)? and what datasets were used in the paper."
+    },
+    {
+        "id": 7,
+        "question": "What is the field of study particiapnts were tested?"
+    },
+    {
+        "id": 8,
+        "question": "what was used as an input features for the model(s)?"
+    },
+    {
+        "id": 9,
+        "question": "Describe validation method and metrics for evaluation."
+    },
+    {
+        "id": 10,
+        "question": "Does paper mention any data bias? Or data inconsistency, sparsity or imbalance? It should be mentioned not in context of general problem, but what this particular paper did about it."
+    },
+    {
+        "id": 11,
+        "question": "How does paper address and evaluate sequential stability?"
+    },
+    {
+        "id": 12,
+        "question": "How does paper addresses and evaluate interpretability? does paper discuss interpretability in this meaning: Interpretability and Explainability Interpretability in machine learning involves elucidating model decisions in a manner comprehensible to humans, revealing the underlying reasoning process. We use the terms interpretable and explainable interchangeably, collectively referred to as interpretability. Key difference in interpretability Probabilities of skill mastery: These are often treated as an output-level interpretability metric, summarizing the learner’s overall skill state. Focus is on the end result (skill level) rather than the journey (how the level was reached). Process-level interpretability: This method delves into process-level interpretability, emphasizing the journey by uncovering how individual or grouped interactions shape the model's predictions. It provides insights into the reasoning process of the DKT model, making the predictionsmore transparent Important: provide direct quotations from the paper's text, like what exact sentences did you use to make this conclusion. Provide sections titles, where you got this info from"
+    },
+    {
+        "id": 13,
+        "question": "Does paper discuss limitations, challanges and future directions for the work?"
+    }
 ]
 
 FOLDER_PATH = "./docs/papers"
@@ -29,6 +72,8 @@ def ask_question_about_text(file_content: str, question: str) -> str:
         "You are a helpful assistant strictly limited to the context provided. "
         "Use only the text below to answer the question. "
         "If the text does not provide enough information, say you don't know.\n\n"
+        "Important: provide direct quotations from the paper's text, like what exact sentences did you use to make this conclusion."
+        "Provide sections titles, where you got this info from. Privide answer as a plain text, no markdown"
         f"=== TEXT START ===\n{file_content}\n=== TEXT END ==="
     )
 
