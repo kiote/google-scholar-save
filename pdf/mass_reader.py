@@ -67,7 +67,7 @@ def main():
             # 2. Construct the paths
             safe_doi = sanitize_filename(doi)
             pdf_path = os.path.join("docs", f"{safe_doi}.pdf")
-            txt_path = os.path.join("docs", f"{safe_doi}.txt")
+            txt_path = os.path.join("docs", "papers", f"{safe_doi}.txt")
 
             if not os.path.isfile(pdf_path):
                 print(f"Warning: No PDF found at {pdf_path} after download step.")
