@@ -18,6 +18,10 @@ def remove_unwanted_sections(text: str) -> str:
         r'^(?:\d+\s*[\.\)]\s*)?(?:references|bibliography)\b.*$',
         re.IGNORECASE | re.MULTILINE
     )
+    litreview_pattern = re.compile(
+        r'^(?:\d+\s*[\.\)]\s*)?(?:literature\s+review)\b.*$',
+        re.IGNORECASE | re.MULTILINE
+    )
     generic_heading = re.compile(
         r'^(?!Figure|Table)(?:\d+\s*[\.\)]\s*)?[A-Z][A-Za-z0-9\-\s\:,\&]{0,50}$',
         re.MULTILINE
@@ -27,6 +31,17 @@ def remove_unwanted_sections(text: str) -> str:
 
     # Remove "Related Work" section if present
     match = related_pattern.search(cleaned_text)
+    if match:
+        start_idx = match.start()
+        next_header = generic_heading.search(cleaned_text, match.end())
+        if next_header:
+            end_idx = next_header.start()
+        else:
+            end_idx = len(cleaned_text)
+        cleaned_text = cleaned_text[:start_idx] + cleaned_text[end_idx:]
+        
+    # Remove "Literature Review" section if present
+    match = litreview_pattern.search(cleaned_text)
     if match:
         start_idx = match.start()
         next_header = generic_heading.search(cleaned_text, match.end())
