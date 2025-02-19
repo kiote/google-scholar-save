@@ -1,3 +1,5 @@
+.PHONY: build analyze clean help
+
 build:
 	@python3 pdf/mass_reader.py
 
@@ -6,6 +8,11 @@ analyze:
 
 clean:
 	@rm -rf docs/papers/*.txt
+	@rm -rf docs/papers/*.md
 	@rm -rf docs/*.pdf
 
-.PHONY: build analyze clean
+help:
+	@echo "build: Build the papers"
+	@echo "analyze: Analyze the papers"
+	@echo "clean: Clean the papers"
+	@echo "help: Show this help message"

@@ -58,7 +58,7 @@ QUESTIONS = [
     },
     {
         "id": 9,
-        "question": "Describe validation method and metrics for evaluation."
+        "question": "Describe validation method and metrics for evaluation. Validation could be cross-validation, train-test split, etc."
     },
     {
         "id": 10,
@@ -66,7 +66,7 @@ QUESTIONS = [
     },
     {
         "id": 11,
-        "question": "How does paper address and evaluate sequential stability?"
+        "question": "How does paper address and evaluate sequential stability? Or how does it asses prediction fluctation of the model?"
     },
     {
         "id": 12,
@@ -127,7 +127,7 @@ def build_vectorstore_from_text(text: str, source_filename: str) -> FAISS:
     # Attach the filename as metadata so we can reference it in citations
     raw_doc = LC_Document(page_content=text, metadata={"source": source_filename})
     
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
     docs = splitter.split_documents([raw_doc])
 
     embeddings = OpenAIEmbeddings()  # uses OPENAI_API_KEY from environment
@@ -140,7 +140,7 @@ def answer_question(vectorstore: FAISS, question: str) -> str:
     Given a vector store and a question, retrieve relevant chunks
     and run the LLM chain to get an answer + citations.
     """
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
 
     llm = ChatOpenAI(
         model_name="o1-preview",  # update as needed
@@ -150,7 +150,7 @@ def answer_question(vectorstore: FAISS, question: str) -> str:
     # IMPORTANT: we set return_source_documents=True
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff",  # simplest approach
+        chain_type="stuff",
         retriever=retriever,
         chain_type_kwargs={"prompt": prompt},
         return_source_documents=True,
